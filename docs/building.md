@@ -49,4 +49,14 @@ The [container-host fragment](../configs/fragments/container-host.config) requir
 
 Use the profile for offline builds and vendor CRC checks. Runtime Docker, VPN, and filesystem behavior requires separate tests. In particular, `NF_TABLES` enables the core, and individual nftables families and expressions have their own Kconfig options.
 
+## Build the namespace-only profile
+
+```bash
+JOBS=8 bash scripts/build-stock.sh --namespaces
+```
+
+The [namespace fragment](../configs/fragments/namespaces.config) adds PID, user, and IPC namespaces to the stock GKI configuration. System V IPC supplies the IPC namespace dependency. Network, UTS, and time namespaces are already built in on this baseline. Changes from the broader container host profile are excluded. Outputs default to `out/experimental-namespaces` in the Linux build cache.
+
+Run the vendor CRC check on the complete module sets before booting a candidate. A namespace-enabled config still requires on-device tests for namespace creation and the intended container runtime.
+
 An isolated `CFS_BANDWIDTH` Kconfig experiment enabled only that setting. The scheduler core and fair-scheduler objects changed 64 export CRCs. Comparing just those changes with the phone's modules identified 97 mismatched imports in 36 `vendor_dlkm` files and 38 mismatches in 23 early-boot module files. The profile leaves this option disabled.

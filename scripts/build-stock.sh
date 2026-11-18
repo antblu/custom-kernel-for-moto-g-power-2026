@@ -8,7 +8,7 @@ source_dir="$cache/ack-$ack"
 toolchain="$cache/clang-$clang/bin"
 profile=experimental-gki
 if (( $# > 1 )); then
-    printf 'Usage: bash scripts/build-stock.sh [--cgroup-pids|--container-host]\n' >&2
+    printf 'Usage: bash scripts/build-stock.sh [--cgroup-pids|--container-host|--namespaces]\n' >&2
     exit 2
 fi
 fragment=
@@ -16,6 +16,7 @@ case ${1:-} in
     '') ;;
     --cgroup-pids) profile=experimental-cgroup-pids; fragment=cgroup-pids.config ;;
     --container-host) profile=experimental-container-host; fragment=container-host.config ;;
+    --namespaces) profile=experimental-namespaces; fragment=namespaces.config ;;
     *) printf 'Unknown build profile: %s\n' "$1" >&2; exit 2 ;;
 esac
 output=${KERNEL_BUILD_OUTPUT:-$cache/out/$profile}
