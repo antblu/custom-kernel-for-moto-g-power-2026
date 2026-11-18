@@ -1,11 +1,36 @@
-# Boot and recovery findings
+# Install and recover on vegas26
 
-For vegas26 firmware W1WEOS36.48-22-3-3-4-2, the active boot partition was backed up privately and its SHA-256 matched the on-device partition. The stock boot header is v4. The separate `init_boot` and `vendor_boot` partitions carry the generic and vendor ramdisks.
+These steps worked on the Moto G Power 2026 running Android 16 build W1WEOS36.48-22-3-3-4-2, with an already-unlocked bootloader and rooted Android on slot A. Verify those conditions, the candidate build manifest, and the vendor CRC results first. Back up user data and keep images in a private directory outside the checkout.
 
-The active `vbmeta` uses SHA256_RSA2048 with flags zero and contains a hash descriptor for `boot`. Replacing the kernel payload changes the digest covered by that descriptor.
+1. In a Linux shell with a working ADB connection, save the active 64 MiB stock boot partition and compare the two SHA-256 digests.
 
-The bootloader accepted temporary downloads of the full stock boot backup and of the original stock image up to the AVB footer's recorded image length. Both download attempts returned to Fastboot. This firmware has no verified temporary boot path in the project. Fastboot recognized slot A and the boot partition size, but the slot-success and slot-unbootable queries returned no usable results. A stock-only restore rehearsal wrote the checksum-verified backup to boot_a in bootloader Fastboot. Stock Android booted on slot A afterward, root worked, and the partition SHA-256 matched the backup.
+   ```sh
+   (set -C; umask 077; adb exec-out "su -c 'dd if=/dev/block/by-name/boot_a bs=1M count=64 2>/dev/null'" > stock-boot-a.img)
+   adb shell "su -c 'sha256sum /dev/block/by-name/boot_a'"
+   sha256sum stock-boot-a.img
+   ```
 
-Motorola documents Software Fix as a factory-reset recovery procedure that installs current matching firmware and removes personal data. Its documentation alone leaves model-specific recovery on this test device unverified. [Motorola Software Fix recovery](https://en-us.support.motorola.com/app/answers/detail/a_id/167770/~/how-to-run-a-rescue-software-update/)
+2. Verify rollback before installing. From bootloader Fastboot, confirm the product and active slot with `fastboot getvar product` and `fastboot getvar current-slot`. With the user's explicit approval for the write, the verified stock restore procedure for slot A is:
 
-The namespace candidate was packaged privately as an unsigned v4 boot image with a gzip kernel. It occupies 22,003,712 bytes, fits the 64 MiB partition, and its decompressed kernel matches the audited build manifest. This checks the image layout and kernel contents. Fastboot accepted the unsigned candidate when flashed to boot_a, and Android booted with the stock init_boot, vendor_boot, and vbmeta in place. USB took longer to reappear than the first status probe allowed. The verified stock backup remains the rollback image.
+   ```sh
+   fastboot flash boot_a stock-boot-a.img
+   fastboot reboot
+   ```
+
+   Confirm Android boots on slot A and the stock partition still matches the digest. A/B slot health and a temporary boot path remain unverified on this firmware.
+
+3. From the repository checkout, package and inspect the namespace candidate using private paths.
+
+   ```sh
+   python3 scripts/package-namespace-boot.py <stock-boot-a.img> <namespace-build-output> <candidate.img>
+   python3 scripts/inspect-boot-image.py <candidate.img>
+   ```
+
+4. After authorizing the candidate write, repeat the Fastboot product and slot checks and flash only `boot_a`.
+
+   ```sh
+   fastboot flash boot_a <candidate.img>
+   fastboot reboot
+   ```
+
+   The tested phone booted without changing `init_boot`, `vendor_boot`, or `vbmeta`. Allow USB time to reappear. Verify `uname -r` reports the candidate's `5.15.180`, Android completed boot, root still works, and SELinux is enforcing. If the candidate fails, return to bootloader Fastboot and restore the verified stock image using step 2.

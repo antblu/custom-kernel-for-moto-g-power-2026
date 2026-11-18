@@ -1,19 +1,31 @@
-# Debian 13 ARM64 on Android
+# Run Debian 13 ARM64 at Android startup
 
-Debian trixie-slim was installed as a root filesystem under `/data/adb/debian-trixie` on the Moto G Power 2026 running the namespace kernel. The source was the official Debian ARM64 OCI image from `docker.io/library/debian` at digest `sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2`. The exported filesystem was SHA-256 checked after transfer before extraction.
+Use a phone running the [namespace kernel](building.md), working Magisk root and BusyBox, USB debugging, Python 3.11 or newer, Docker, and ADB. Debian stays under `/data/adb/debian-trixie`.
 
-## Open a Debian shell
+## Install
+
+From the repository root:
 
 ```sh
-adb shell -t "su -c '/system/bin/sh /data/adb/debian-shell'"
+python3 scripts/install-debian.py
+adb reboot
 ```
 
-The [launcher](../scripts/debian-shell.sh) uses Magisk BusyBox to create private mount, PID, IPC, and UTS namespaces before entering the Debian root filesystem. Debian shares Android's network namespace. Its resolver was configured from the phone's active network and may need updating when that network changes. The launcher runs on demand.
+Use `--adb <path-to-adb>` if ADB is outside PATH. On WSL, a working Windows Platform-Tools executable is also usable via its mounted path. Add `--reuse` to preserve an existing trixie filesystem while updating its launcher, resolver, and startup hook.
 
-## Verified on the phone
+The installer downloads and exports the digest-pinned official ARM64 Debian image, verifies the archive after transferring it, installs Debian's `tini` package, and registers a Magisk startup service. After Android finishes booting, the service launches `tini` as PID 1 inside Debian's PID namespace. Android retains its own init. The Debian instance has separate PID, mount, IPC, and UTS namespaces and shares Android's network. DNS is copied from Android's active network during setup. Run the installer with `--reuse` to refresh it after a network change.
 
-- Debian reports version 13 and architecture arm64.
-- The Debian test process ran as PID 1 with its own proc filesystem.
-- DNS resolution and `apt-get update` succeeded over Android's network.
+## Enter and test
 
-Docker, systemd as PID 1, and cgroup delegation remain untested.
+```sh
+adb shell -t "su -c '/system/bin/sh /data/adb/debian-shell --enter'"
+python3 tests/test-debian-phone.py
+```
+
+The shell joins the Debian instance started during boot. To disable automatic startup, move `/data/adb/service.d/90-debian-trixie.sh` outside Magisk's service directory as root, then reboot Android.
+
+## Test results
+
+On the test phone, a fresh Android reboot started Debian automatically. The test suite verified Debian 13 ARM64, `tini` as PID 1, the namespace boundaries, Bash, child exit status, signals, file permissions and hard links, device nodes, private pseudoterminals, the writable shared memory directory, DNS, APT index updates, and the installed init package.
+
+This is a usable Debian command-line environment. Debian uses the Android kernel, shares the phone's network, and uses `tini` for startup. Full systemd service management, Docker, cgroup delegation, and hardware access from Debian have not been validated.

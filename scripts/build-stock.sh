@@ -8,14 +8,12 @@ source_dir="$cache/ack-$ack"
 toolchain="$cache/clang-$clang/bin"
 profile=experimental-gki
 if (( $# > 1 )); then
-    printf 'Usage: bash scripts/build-stock.sh [--cgroup-pids|--container-host|--namespaces]\n' >&2
+    printf 'Usage: bash scripts/build-stock.sh [--namespaces]\n' >&2
     exit 2
 fi
 fragment=
 case ${1:-} in
     '') ;;
-    --cgroup-pids) profile=experimental-cgroup-pids; fragment=cgroup-pids.config ;;
-    --container-host) profile=experimental-container-host; fragment=container-host.config ;;
     --namespaces) profile=experimental-namespaces; fragment=namespaces.config ;;
     *) printf 'Unknown build profile: %s\n' "$1" >&2; exit 2 ;;
 esac
@@ -56,21 +54,10 @@ build=(make -C "$source_dir" "O=$output" ARCH=arm64 LLVM=1 LLVM_IAS=1 KCFLAGS=-D
 configure() {
     "${build[@]}" gki_defconfig || return
     if [[ -n $fragment ]]; then
-        local baseline diff setting
-        baseline=$(mktemp "$output/.baseline-config.XXXXXXXX") || return
-        cp -- "$output/.config" "$baseline" &&
-            "$source_dir/scripts/kconfig/merge_config.sh" -m -O "$output" "$baseline" \
-                "$project/configs/fragments/$fragment" &&
-            "${build[@]}" olddefconfig &&
-            diff=$("$source_dir/scripts/diffconfig" "$baseline" "$output/.config") || {
-                rm -f -- "$baseline"
-                return 1
-            }
-        rm -f -- "$baseline"
-        if [[ $profile == experimental-cgroup-pids && $diff != ' CGROUP_PIDS n -> y' ]]; then
-            printf 'Unexpected candidate configuration diff:\n%s\n' "$diff" >&2
-            return 1
-        fi
+        local setting
+        "$source_dir/scripts/kconfig/merge_config.sh" -m -O "$output" "$output/.config" \
+            "$project/configs/fragments/$fragment" || return
+        "${build[@]}" olddefconfig || return
         while IFS= read -r setting; do
             [[ $setting == CONFIG_*=y ]] || continue
             if ! grep -Fxq -- "$setting" "$output/.config"; then
@@ -78,14 +65,6 @@ configure() {
                 return 1
             fi
         done < "$project/configs/fragments/$fragment"
-        if [[ $profile == experimental-container-host ]]; then
-            for setting in CGROUP_PIDS CFS_BANDWIDTH; do
-                if ! grep -Fxq -- "# CONFIG_$setting is not set" "$output/.config"; then
-                    printf 'Experimental option unexpectedly enabled: %s\n' "$setting" >&2
-                    return 1
-                fi
-            done
-        fi
     fi
 }
 printf 'Building %s in %s\n' "$profile" "$output"
