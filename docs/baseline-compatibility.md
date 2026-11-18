@@ -57,3 +57,11 @@ The [container-host profile](building.md#build-the-container-host-profile) built
 | Vendor boot ramdisk | 4,197 | 202 of 202 |
 
 This candidate is unsuitable for installation with the current vendor modules. The profile is a buildable record of the requested feature set. To isolate work that could preserve the vendor ABI, test individual options or small dependency groups against the unmodified baseline.
+
+## Namespace-only candidate
+
+The [namespace-only build](building.md#build-the-namespace-only-profile) enabled PID, user, and IPC namespaces with POSIX message queues. The build and manifest checks passed. It added 12 exports and preserved all 15,406 baseline export CRCs. All versioned imports in the 197 `vendor_dlkm` and 202 early-boot vendor module files resolved with matching CRCs.
+
+An ARM64 QEMU guest ran an init program that created a child with mount, UTS, IPC, user, PID, and network namespaces. The child observed itself as PID 1 and successfully unshared its time namespace for children. The unmodified baseline failed the same test. Android's SELinux policy, device hardware, and a container runtime still require on-device verification.
+
+The phone returned to stock Android after the [temporary stock boot probes](recovery.md). Both verified stock image formats returned to Fastboot when loaded temporarily. The candidate remained off-device pending a verified installation and recovery path.

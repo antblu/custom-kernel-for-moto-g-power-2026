@@ -59,4 +59,12 @@ The [namespace fragment](../configs/fragments/namespaces.config) adds PID, user,
 
 Run the vendor CRC check on the complete module sets before booting a candidate. A namespace-enabled config still requires on-device tests for namespace creation and the intended container runtime.
 
+On Ubuntu, install `qemu-system-arm` to run the offline ARM64 namespace smoke test. Use the candidate's uncompressed kernel Image.
+
+```bash
+bash tests/test-namespaces-vm.sh <candidate-Image>
+```
+
+The isolated guest reports `NAMESPACE_SMOKE_PASS` when a nested PID 1 and the requested namespace operations work.
+
 An isolated `CFS_BANDWIDTH` Kconfig experiment enabled only that setting. The scheduler core and fair-scheduler objects changed 64 export CRCs. Comparing just those changes with the phone's modules identified 97 mismatched imports in 36 `vendor_dlkm` files and 38 mismatches in 23 early-boot module files. The profile leaves this option disabled.
