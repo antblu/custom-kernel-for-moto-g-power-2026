@@ -41,6 +41,8 @@ The [pids controller fragment](../configs/fragments/cgroup-pids.config) enabled 
 | vendor_dlkm | 2,216 | 197 of 197 |
 | Vendor boot ramdisk | 2,060 | 202 of 202 |
 
-The candidate is **incompatible with the existing vendor modules** and must stay off the device. A likely contributor is the pids controller's entry in [the cgroup subsystem list](https://android.googlesource.com/kernel/common/+/9b2308ac0ad616788fb57ba688aa07f0ff221355/include/linux/cgroup_subsys.h), which changes the subsystem count used to size arrays in [cgroup structures](https://android.googlesource.com/kernel/common/+/9b2308ac0ad616788fb57ba688aa07f0ff221355/include/linux/cgroup-defs.h). A follow-up needs to trace which types account for the export CRC changes and validate a KMI-preserving approach or rebuild the affected vendor modules from matching source.
+The candidate is **incompatible with the existing vendor modules** and must stay off the device. The pids controller adds an entry to the subsystem enum, increasing `CGROUP_SUBSYS_COUNT` from seven to eight. BTF from the two compiled builds confirms that `struct css_set` grew from 424 to 448 bytes and `struct cgroup` from 2,400 to 2,424 bytes. In `css_set`, the `e_cset_node` array moved from offset 152 to 160.
+
+The `kernel/fork.symtypes` record traces `get_task_mm` through `task_struct` and its `cgroups` pointer to `css_set` and the subsystem count. The CRC changed from `0x5c9998cf` to `0xfa229ccf` even though `task_struct` stayed 4,608 bytes. A KMI-preserving design would need to preserve existing layouts and subsystem indices. CRC overrides would leave the layout differences in place. [Android kernel ABI monitoring](https://source.android.com/docs/core/architecture/kernel/abi-monitor)
 
 Baseline compatibility status is **Experimental**. The [Android hardware and Linux runtime checks](hardware-tests.md) require separate device testing. Recovery and temporary boot support are unverified.

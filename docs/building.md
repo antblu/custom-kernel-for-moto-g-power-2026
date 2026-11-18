@@ -38,3 +38,15 @@ make -C "$ACK_SOURCE" O="$candidate" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig
 The expected diff is `CGROUP_PIDS n -> y`. This check produces a configuration for a future candidate build.
 
 To compile the candidate, run `JOBS=8 bash scripts/build-stock.sh --cgroup-pids`. It verifies the same one-option diff before compilation and writes to the separate `out/experimental-cgroup-pids` directory under the Linux build cache by default. Use the candidate's `Module.symvers` to repeat the full vendor CRC comparison.
+
+## Build the container host profile
+
+```bash
+JOBS=8 bash scripts/build-stock.sh --container-host
+```
+
+The [container-host fragment](../configs/fragments/container-host.config) requires all requested namespace, cgroup, filesystem, network, security, and VPN options to resolve as built-ins. The script checks the result after `olddefconfig`. It also checks that the two KMI-gated options, `CONFIG_CGROUP_PIDS` and `CONFIG_CFS_BANDWIDTH`, remain disabled. Outputs default to `out/experimental-container-host` in the Linux build cache.
+
+Use the profile for offline builds and vendor CRC checks. Runtime Docker, VPN, and filesystem behavior requires separate tests. In particular, `NF_TABLES` enables the core, and individual nftables families and expressions have their own Kconfig options.
+
+A separate `CFS_BANDWIDTH` Kconfig experiment enabled only that setting and left the recorded `kernel/fork.symtypes` definitions unchanged. This spot check leaves the scheduler's own exports and the full vendor CRC comparison unverified.
