@@ -1,6 +1,6 @@
 # Moto G Power 2026 kernel development
 
-This project investigates Linux container support on the Moto G Power 2026 while keeping the original Android installation and vendor drivers. An unmodified experimental GKI baseline builds on Ubuntu 24.04. Installation support is pending official Android ABI checks, vendor module validation, and recovery verification.
+This project develops an Android GKI kernel for the Moto G Power 2026 with Linux namespaces. The namespace-only kernel boots on the tested Android 16 firmware and runs Debian 13 ARM64 userspace. See [Debian userspace](docs/debian.md) for the launch command and test results.
 
 The experimental PID controller build compiles but fails the vendor module CRC check. It is unsuitable for installation with the current firmware's modules.
 
@@ -10,7 +10,7 @@ The namespace-only profile passes vendor CRC comparison and an ARM64 namespace s
 
 | Device | Firmware | Running kernel | Custom kernel compatibility |
 | --- | --- | --- | --- |
-| Moto G Power 2026 (vegas26, ARM64) | Android 16, W1WEOS36.48-22-3-3-4-2 | 5.15.180-android13-8-00018-g9b2308ac0ad6-ab14563692 | Unknown |
+| Moto G Power 2026 (vegas26, ARM64) | Android 16, W1WEOS36.48-22-3-3-4-2 | 5.15.180-android13-8-00018-g9b2308ac0ad6-ab14563692 (stock) | Namespace-only build booted and tested with Debian. Full hardware regression pending. |
 
 ## Collect a compatibility report
 
