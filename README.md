@@ -6,7 +6,7 @@ The experimental PID controller build compiles but fails the vendor module CRC c
 
 The container-host profile builds with all 59 requested features outside the experimental group, and it also fails the vendor module CRC check. See the [container host results](docs/baseline-compatibility.md#container-host-candidate).
 
-The namespace-only profile passes vendor CRC comparison and an ARM64 namespace smoke test. Installation awaits a verified [boot and recovery path](docs/recovery.md). See the [namespace-only results](docs/baseline-compatibility.md#namespace-only-candidate).
+The namespace-only profile passes vendor CRC comparison and an ARM64 namespace smoke test. It boots on the tested phone and passes on-device namespace smoke tests. See the [boot and recovery findings](docs/recovery.md). See the [namespace-only results](docs/baseline-compatibility.md#namespace-only-candidate).
 
 | Device | Firmware | Running kernel | Custom kernel compatibility |
 | --- | --- | --- | --- |
