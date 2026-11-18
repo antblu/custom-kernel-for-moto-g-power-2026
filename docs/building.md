@@ -55,7 +55,7 @@ Use the profile for offline builds and vendor CRC checks. Runtime Docker, VPN, a
 JOBS=8 bash scripts/build-stock.sh --namespaces
 ```
 
-The [namespace fragment](../configs/fragments/namespaces.config) adds PID, user, and IPC namespaces to the stock GKI configuration. System V IPC supplies the IPC namespace dependency. Network, UTS, and time namespaces are already built in on this baseline. Changes from the broader container host profile are excluded. Outputs default to `out/experimental-namespaces` in the Linux build cache.
+The [namespace fragment](../configs/fragments/namespaces.config) adds PID, user, and IPC namespaces to the stock GKI configuration. POSIX message queues satisfy the IPC namespace dependency. System V IPC changed CRCs in all four sampled kernel objects, so it is disabled in this profile. Network, UTS, and time namespaces are already built in on this baseline. Outputs default to `out/experimental-namespaces` in the Linux build cache.
 
 Run the vendor CRC check on the complete module sets before booting a candidate. A namespace-enabled config still requires on-device tests for namespace creation and the intended container runtime.
 
