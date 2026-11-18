@@ -32,8 +32,15 @@ Before including the early-boot modules, the vendor_dlkm audit had 505 unresolve
 
 The checked-in AOSP ABI XML is a separate reference. All 8,481 of its CRC-bearing symbols are present in the local build, and 478 have a different CRC. Substituting the XML for the compiled symbol table would report 626 vendor_dlkm and 559 early-boot import CRC mismatches. The baseline retains the compiled symbol table for import comparison. Official ABI checks remain pending.
 
-## First feature configuration
+## PID controller candidate
 
-The [pids controller fragment](../configs/fragments/cgroup-pids.config) enables process limits in cgroups. The pinned kernel's merge_config.sh and olddefconfig resolved exactly one change against the baseline, CONFIG_CGROUP_PIDS from disabled to built-in. A candidate build must repeat the module CRC comparison and validate Android cgroup behavior and Linux process limits at runtime.
+The [pids controller fragment](../configs/fragments/cgroup-pids.config) enabled exactly one setting, CONFIG_CGROUP_PIDS. The ARM64 candidate built successfully and all four artifact checksums passed. Its symbol table added two exports, removed none, and changed 6,356 CRCs relative to the baseline.
 
-Compatibility status is **Experimental**. The [Android hardware and Linux runtime checks](hardware-tests.md) require separate device testing. Recovery and temporary boot support are unverified.
+| Module set | Import CRC mismatches | Files affected |
+| --- | ---: | ---: |
+| vendor_dlkm | 2,216 | 197 of 197 |
+| Vendor boot ramdisk | 2,060 | 202 of 202 |
+
+The candidate is **incompatible with the existing vendor modules** and must stay off the device. A likely contributor is the pids controller's entry in [the cgroup subsystem list](https://android.googlesource.com/kernel/common/+/9b2308ac0ad616788fb57ba688aa07f0ff221355/include/linux/cgroup_subsys.h), which changes the subsystem count used to size arrays in [cgroup structures](https://android.googlesource.com/kernel/common/+/9b2308ac0ad616788fb57ba688aa07f0ff221355/include/linux/cgroup-defs.h). A follow-up needs to trace which types account for the export CRC changes and validate a KMI-preserving approach or rebuild the affected vendor modules from matching source.
+
+Baseline compatibility status is **Experimental**. The [Android hardware and Linux runtime checks](hardware-tests.md) require separate device testing. Recovery and temporary boot support are unverified.

@@ -2,6 +2,8 @@
 
 This project investigates Linux container support on the Moto G Power 2026 while keeping the original Android installation and vendor drivers. An unmodified experimental GKI baseline builds on Ubuntu 24.04. Installation support is pending official Android ABI checks, vendor module validation, and recovery verification.
 
+The experimental PID controller build compiles but fails the vendor module CRC check. It is unsuitable for installation with the current firmware's modules.
+
 | Device | Firmware | Running kernel | Custom kernel compatibility |
 | --- | --- | --- | --- |
 | Moto G Power 2026 (vegas26, ARM64) | Android 16, W1WEOS36.48-22-3-3-4-2 | 5.15.180-android13-8-00018-g9b2308ac0ad6-ab14563692 | Unknown |
