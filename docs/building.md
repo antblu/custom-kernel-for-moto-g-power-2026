@@ -49,4 +49,4 @@ The [container-host fragment](../configs/fragments/container-host.config) requir
 
 Use the profile for offline builds and vendor CRC checks. Runtime Docker, VPN, and filesystem behavior requires separate tests. In particular, `NF_TABLES` enables the core, and individual nftables families and expressions have their own Kconfig options.
 
-A separate `CFS_BANDWIDTH` Kconfig experiment enabled only that setting and left the recorded `kernel/fork.symtypes` definitions unchanged. This spot check leaves the scheduler's own exports and the full vendor CRC comparison unverified.
+An isolated `CFS_BANDWIDTH` Kconfig experiment enabled only that setting. The scheduler core and fair-scheduler objects changed 64 export CRCs. Comparing just those changes with the phone's modules identified 97 mismatched imports in 36 `vendor_dlkm` files and 38 mismatches in 23 early-boot module files. The profile leaves this option disabled.

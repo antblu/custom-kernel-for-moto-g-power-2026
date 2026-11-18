@@ -4,6 +4,8 @@ This project investigates Linux container support on the Moto G Power 2026 while
 
 The experimental PID controller build compiles but fails the vendor module CRC check. It is unsuitable for installation with the current firmware's modules.
 
+The container-host profile builds with all 59 requested features outside the experimental group, and it also fails the vendor module CRC check. See the [container host results](docs/baseline-compatibility.md#container-host-candidate).
+
 | Device | Firmware | Running kernel | Custom kernel compatibility |
 | --- | --- | --- | --- |
 | Moto G Power 2026 (vegas26, ARM64) | Android 16, W1WEOS36.48-22-3-3-4-2 | 5.15.180-android13-8-00018-g9b2308ac0ad6-ab14563692 | Unknown |

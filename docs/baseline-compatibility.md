@@ -46,3 +46,14 @@ The candidate is **incompatible with the existing vendor modules** and must stay
 The `kernel/fork.symtypes` record traces `get_task_mm` through `task_struct` and its `cgroups` pointer to `css_set` and the subsystem count. The CRC changed from `0x5c9998cf` to `0xfa229ccf` even though `task_struct` stayed 4,608 bytes. A KMI-preserving design would need to preserve existing layouts and subsystem indices. CRC overrides would leave the layout differences in place. [Android kernel ABI monitoring](https://source.android.com/docs/core/architecture/kernel/abi-monitor)
 
 Baseline compatibility status is **Experimental**. The [Android hardware and Linux runtime checks](hardware-tests.md) require separate device testing. Recovery and temporary boot support are unverified.
+
+## Container host candidate
+
+The [container-host profile](building.md#build-the-container-host-profile) built an ARM64 Image with all 59 requested settings built in. The Image, System.map, .config, and Module.symvers passed checksum verification. The candidate added 502 exports, removed none, and changed 10,148 shared CRCs relative to the unmodified baseline.
+
+| Module set | Import CRC mismatches | Files affected |
+| --- | ---: | ---: |
+| vendor_dlkm | 4,365 | 197 of 197 |
+| Vendor boot ramdisk | 4,197 | 202 of 202 |
+
+This candidate is unsuitable for installation with the current vendor modules. The profile is a buildable record of the requested feature set. To isolate work that could preserve the vendor ABI, test individual options or small dependency groups against the unmodified baseline.
