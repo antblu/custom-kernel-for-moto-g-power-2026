@@ -12,4 +12,4 @@ fi
 "${privilege[@]}" apt-get update
 "${privilege[@]}" apt-get install --no-install-recommends \
     build-essential bc bison flex libssl-dev libelf-dev dwarves \
-    cpio kmod rsync curl openssl ca-certificates
+    cpio kmod lz4 rsync curl openssl ca-certificates

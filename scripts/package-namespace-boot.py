@@ -3,11 +3,13 @@
 import argparse
 import gzip
 import hashlib
+import json
 import struct
+import subprocess
+import sys
 from pathlib import Path
 
 PAGE = 4096
-BOOT_BYTES = 64 * 1024 * 1024
 
 
 def main():
@@ -20,26 +22,31 @@ def main():
     image = (args.build_output / "arch/arm64/boot/Image").read_bytes()
     digest = hashlib.sha256(image).hexdigest()
     manifest = (args.build_output / "build-manifest.txt").read_text().splitlines()
-    supported_profiles = {
-        "profile=experimental-namespaces",
-        "profile=experimental-namespaces-pids",
-        "profile=experimental-namespaces-pids-vxlan",
-        "profile=experimental-namespaces-pids-vxlan-bridge",
-        "profile=experimental-namespaces-pids-vxlan-cfs",
-    }
     if (f"{digest}  arch/arm64/boot/Image" not in manifest or
-            supported_profiles.isdisjoint(manifest) or image[56:60] != b"ARM\x64"):
+            "profile=experimental-namespaces-pids-vxlan-k3s-unified" not in manifest or image[56:60] != b"ARM\x64"):
         parser.error("Expected a manifest-verified namespace build.")
+    inspector = Path(__file__).with_name("inspect-boot-image.py")
+    info = json.loads(subprocess.check_output([sys.executable, inspector, args.stock_boot]))
+    if (info["type"] != "boot" or info["header_version"] != 4 or
+            info["ramdisk_bytes"] or info["boot_signature_bytes"]):
+        parser.error("Expected the matching stock v4 partition without an embedded ramdisk.")
     with args.stock_boot.open("rb") as stock:
         header = bytearray(stock.read(PAGE))
-    if (args.stock_boot.stat().st_size != BOOT_BYTES or len(header) != PAGE or
-            header[:8] != b"ANDROID!" or struct.unpack_from("<I", header, 40)[0] != 4 or
-            struct.unpack_from("<I", header, 12)[0] or struct.unpack_from("<I", header, 1580)[0]):
-        parser.error("Expected the matching stock v4 partition without an embedded ramdisk.")
+    partition_size = args.stock_boot.stat().st_size
 
-    payload = gzip.compress(image, mtime=0)
+    encoding = info["kernel_encoding"]
+    if encoding == "gzip":
+        payload = gzip.compress(image, mtime=0)
+    elif encoding == "arm64-image":
+        payload = image
+    elif encoding in ("lz4-legacy", "lz4-frame"):
+        options = ["-l"] if encoding == "lz4-legacy" else []
+        payload = subprocess.run(["lz4", "-z", "-c", *options], input=image,
+                                 capture_output=True, check=True).stdout
+    else:
+        parser.error("Unknown stock kernel encoding.")
     padding = bytes(-len(payload) % PAGE)
-    if PAGE + len(payload) + len(padding) > BOOT_BYTES:
+    if PAGE + len(payload) + len(padding) > partition_size:
         parser.error("The candidate exceeds the boot partition size.")
     struct.pack_into("<I", header, 8, len(payload))
     with args.output.open("xb") as output:
