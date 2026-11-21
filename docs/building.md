@@ -23,4 +23,4 @@ python3 scripts/verify-kmi.py --symvers <namespace-build-output>/Module.symvers 
 bash tests/test-namespaces-vm.sh <namespace-Image>
 ```
 
-The VM test requires Ubuntu's qemu-system-arm package. It creates an ARM64 guest and checks that a child starts as PID 1 in new namespaces. See the [verified results](baseline-compatibility.md) and [installation and recovery procedure](recovery.md).
+The VM test requires the qemu-system-arm package. It creates an ARM64 guest and checks that a child starts as PID 1 in new namespaces. See the [verified results](baseline-compatibility.md) and [installation and recovery procedure](recovery.md).
