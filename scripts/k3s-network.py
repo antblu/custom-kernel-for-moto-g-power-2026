@@ -91,7 +91,7 @@ def reconcile_relay(args, remove):
         ), remove, first_comment=comment)
 
 
-def configure(args, remove=False):
+def configure(args, remove=False, *, rollback_on_error=False):
     rules = [
         (("to", str(args.pod_network)), 254),
         (("to", str(args.service_network)), 254),
@@ -114,11 +114,19 @@ def configure(args, remove=False):
         for priority, current in zip(PRIORITIES, snapshots):
             if any(str(rule.get("protocol")) != PROTOCOL for rule in current):
                 raise RuntimeError(f"Routing priority {priority} is already in use")
-    for priority, (selectors, table), current in zip(PRIORITIES, rules, snapshots):
-        owned = [rule for rule in current if str(rule.get("protocol")) == PROTOCOL]
-        reconcile(priority, selectors, None if remove else table, owned)
-    if args.relay:
-        reconcile_relay(args, remove)
+    try:
+        for priority, (selectors, table), current in zip(PRIORITIES, rules, snapshots):
+            owned = [rule for rule in current if str(rule.get("protocol")) == PROTOCOL]
+            reconcile(priority, selectors, None if remove else table, owned)
+        if args.relay:
+            reconcile_relay(args, remove)
+    except (OSError, RuntimeError, subprocess.CalledProcessError):
+        if rollback_on_error:
+            try:
+                configure(args, remove=True)
+            except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+                print(f"Routing rollback failed: {error}", file=sys.stderr)
+        raise
 
 
 def endpoint(value):
@@ -189,7 +197,7 @@ def main():
     if args.action != "watch":
         if args.allow_uid_65532:
             parser.error("The UID exemption is managed only by the watcher")
-        configure(args, remove=args.action == "remove")
+        configure(args, remove=args.action == "remove", rollback_on_error=args.action == "apply")
         return
 
     def stop(signum, frame):

@@ -282,6 +282,7 @@ def deploy(args):
     work = args.work
     data = baseline(work)
     action = args.action
+    staged_receipt = work / "staged-init.json"
     prepared = work / "prepared"
     candidate = prepared / "candidates"
     if action != "restore":
@@ -310,12 +311,13 @@ def deploy(args):
         target = block("init_boot", data["slot"])
         image = candidate / "init_boot.img"
         require(image.stat().st_size == data["images"]["init_boot"]["size"], "Invalid init_boot size")
+        staged_receipt.unlink(missing_ok=True)
         action = f"set -e; cat > {target}; sync"
         with image.open("rb") as stream:
             invoke([*adb, "exec-in", "su -c " + shlex.quote(action)], stdin=stream)
         require(read_root(adb, f"sha256sum {target}").split()[0] == checks["init_boot"],
                 "init_boot write failed readback")
-        write_json(work / "staged-init.json", checks)
+        write_json(staged_receipt, checks)
         print("Verified init_boot readback. Enter bootloader Fastboot directly and flash with --staged-init.")
         return
 
@@ -337,12 +339,16 @@ def deploy(args):
     else:
         source = candidate
         if args.staged_init:
-            require(json.loads((work / "staged-init.json").read_text(encoding="utf-8")) == checks,
+            require(json.loads(staged_receipt.read_text(encoding="utf-8")) == checks,
                     "Staged init_boot receipt does not match this image pair")
             names.remove("init_boot")
     fastboot = fastboot_target(data, names)
+    if "init_boot" in names:
+        staged_receipt.unlink(missing_ok=True)
     for name in names:
         invoke([*fastboot, "flash", f"{name}_{data['slot']}", str(source / f"{name}.img")])
+    if action == "flash" and args.staged_init:
+        staged_receipt.unlink()
     print("Partition writes completed. Reboot from the bootloader after checking the result.")
 
 

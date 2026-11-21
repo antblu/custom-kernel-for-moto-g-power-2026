@@ -82,8 +82,8 @@ The temporary test writes no partitions. Fastboot can load only the kernel image
 When the bootloader supports both image writes and the recovery path has been verified, return to the bootloader and explicitly flash the pair.
 
 ```bash
-python3 scripts/deploy-vegas26.py "$WORK" flash --confirm-recovery
-bootloader reboot
+python3 scripts/deploy-vegas26.py "$WORK" flash --confirm-recovery &&
+    bootloader reboot
 ```
 
 For the reference Val-unlocked bootloader, first verify that you can restore your matching factory boot and factory init_boot before ADB starts. If you choose to proceed without a temporary test, return to working Magisk-rooted Android. Stage init_boot through the existing root, reboot directly to bootloader Fastboot, and flash boot. Proceed to each line only after the previous one succeeds. Complete both writes before starting Android.
