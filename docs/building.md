@@ -1,6 +1,6 @@
 # Build the namespace kernel
 
-Use x86_64 Ubuntu 24.04 or Ubuntu under WSL2. Keep the source cache and build output on the Linux filesystem.
+Keep the source cache and build output on the Linux filesystem.
 
 ```bash
 bash scripts/setup-build-env.sh
